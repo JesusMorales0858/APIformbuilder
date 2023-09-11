@@ -35,4 +35,12 @@ namespace APIformbuilder.Models
         public string Titulo { get; set; }
         public string Descripcion { get; set; }
     }
+
+    //Clase MostrarFormularios proyeccion
+    // public class MostrarFormularios 
+    //{
+    //  public int IdConfigForm { get; set; }
+    //  public string Titulo { get; set; }
+    //  public string Descripcion { get; set; }
+    //  }
 }
