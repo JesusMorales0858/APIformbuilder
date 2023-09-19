@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Xml.Linq;
+using System.Collections.Generic;
 
 namespace APIformbuilder.Models
 {
@@ -20,13 +21,21 @@ namespace APIformbuilder.Models
 
         [Display(Name = "Fecha de Eliminación")]
         public DateTime? Fecha_Eliminacion { get; set; }
+
+        //Propiedad lista apara almacenar campos
+        public List<Field> Campos { get; set; }
     }
+}
+
+
     //Clase ConfigFormListaMenu proyeccion
     public class ConfigFormMenu
     {
         public int IdConfigForm { get; set; }
         public string Titulo { get; set; }
     }
+
+
 
     //Clase ConfigFormListaCRUD proyeccion
     public class ConfigFormCRUD
@@ -43,4 +52,5 @@ namespace APIformbuilder.Models
     //  public string Titulo { get; set; }
     //  public string Descripcion { get; set; }
     //  }
-}
+
+    

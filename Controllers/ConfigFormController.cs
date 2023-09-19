@@ -5,6 +5,7 @@ using System.Data;
 using System.Data.SqlClient;
 using APIformbuilder.Models;
 using Microsoft.AspNetCore.Cors;
+using Dapper;
 
 namespace APIformbuilder.Controllers
 {
@@ -107,7 +108,7 @@ namespace APIformbuilder.Controllers
 
 
                 }
-                return StatusCode(StatusCodes.Status200OK, new { message ="eliminado" });
+                return StatusCode(StatusCodes.Status200OK, new { message = "eliminado" });
             }
             catch (Exception erx)
             {
@@ -159,7 +160,7 @@ namespace APIformbuilder.Controllers
                             campo.tipo = reader.GetString(reader.GetOrdinal("TipoCampo"));
                             campo.requerido = reader.GetInt32(reader.GetOrdinal("RequeridoCampo"));
                             campo.marcador = reader.GetString(reader.GetOrdinal("MarcadorCampo"));
-                           // campo.opciones = reader.GetString(reader.GetOrdinal("OpcionesCampo"));
+                            // campo.opciones = reader.GetString(reader.GetOrdinal("OpcionesCampo"));
                             campo.visible = reader.GetInt32(reader.GetOrdinal("VisibleCampo"));
                             campo.clase = reader.GetString(reader.GetOrdinal("ClaseCampo"));
                             campo.estado = reader.GetInt32(reader.GetOrdinal("EstadoCampo"));
@@ -173,7 +174,7 @@ namespace APIformbuilder.Controllers
                 }
                 //formulariodata.Campos = campodata;
                 //return formulariodata;
-                return StatusCode(StatusCodes.Status200OK, new { datosForm=formulariodata, datosField=campodata });
+                return StatusCode(StatusCodes.Status200OK, new { datosForm = formulariodata, datosField = campodata });
             }
             catch (Exception erx)
             {
@@ -181,6 +182,76 @@ namespace APIformbuilder.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new { mensaje = erx.Message });
             }
         }
+        //*****************************************************************************************************
+
+        //***************GUARDAR FORMULARIO COMPLT**************
+
+        [HttpPost]
+        [Route("GuardarFormularioCreado")]
+        public IActionResult GuardarFormularioCampos(ConfigForm Field)
+        {
+            using (var conexion = new SqlConnection(cadenaSQL))
+            {
+                conexion.Open();
+                using (var transaction = conexion.BeginTransaction())
+                {
+                    try
+                    {
+                        var insertConfigFormSql = "INSERT INTO ConfigForm (Titulo, Descripcion, Fecha_Creacion) VALUES (@Titulo, @Descripcion, @Fecha_Creacion); SELECT SCOPE_IDENTITY();";
+                        int configFormId = conexion.QuerySingle<int>(insertConfigFormSql, new
+                        {
+                            Titulo = Field.Titulo,
+                            Descripcion = Field.Descripcion,
+                            Fecha_Creacion = DateTime.Now
+                        }, transaction);
+
+                        foreach (var fieldInput in Field.Campos)
+                        {
+                            var insertFieldSql = "INSERT INTO Field (nombre, orden, etiqueta, tipo, requerido, marcador, opciones, visible, clase, estado, Id_ConfigForm, fecha_eliminacion) VALUES (@nombre, @orden, @etiqueta, @tipo, @requerido, @marcador, @opciones, @visible, @clase, @estado, @Id_ConfigForm, @fecha_eliminacion);";
+                            conexion.Execute(insertFieldSql, new
+                            {
+                                nombre = fieldInput.nombre,
+                                orden = fieldInput.orden,
+                                etiqueta = fieldInput.etiqueta,
+                                tipo = fieldInput.tipo,
+                                requerido = fieldInput.requerido,
+                                marcador = fieldInput.marcador,
+                                opciones = fieldInput.opciones,
+                                visible = fieldInput.visible,
+                                clase = fieldInput.clase,
+                                estado = fieldInput.estado,
+                                Id_ConfigForm = configFormId,
+                                fecha_eliminacion = fieldInput.fecha_eliminacion
+                            }, transaction);
+                        }
+
+                        transaction.Commit();
+
+                        // Devuelve el ID generado como respuesta HTTP 200 (éxito)
+                        return Ok(new { Id = configFormId });
+                    }
+                    catch (Exception)
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
+            }
+        }
+
+
+
+
+
+
+
+
+
+
 
     }
 }
+
+
+
+
