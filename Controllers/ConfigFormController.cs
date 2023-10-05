@@ -238,6 +238,40 @@ namespace APIformbuilder.Controllers
                 }
             }
         }
+		//***************LISTAR RESPUESTAS**************
+		[HttpGet]
+		[Route("ListaRespuestas/{IdConfigForm:int}")]
+		public IActionResult ListaRespuesta(int IdConfigForm)
+		{
+			List<RespuestasLista> lista = new List<RespuestasLista>();
+			try
+			{
+				using (var conexion = new SqlConnection(cadenaSQL))
+				{
+					conexion.Open();
+					var cmd = new SqlCommand("ListarRespuestas", conexion);
+					cmd.Parameters.AddWithValue("@Id_Formulario", IdConfigForm);
+					cmd.CommandType = CommandType.StoredProcedure;
+					using (var rd = cmd.ExecuteReader())
+					{
+						while (rd.Read())
+						{
+							lista.Add(new RespuestasLista()
+							{
+								nombre = rd["nombre"].ToString(),
+								valor = rd["valor"].ToString(),
+							});
+						}
+					}
+				}
+				return StatusCode(StatusCodes.Status200OK, new { lista });
+			}
+			catch (Exception error)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, new { mensaje = error.Message });
+			}
+		}
+		//*****************************************************************************************************
 
 
 
@@ -249,7 +283,9 @@ namespace APIformbuilder.Controllers
 
 
 
-    }
+
+
+	}
 }
 
 
