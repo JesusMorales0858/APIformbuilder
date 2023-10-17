@@ -6,6 +6,7 @@ using System.Data.SqlClient;
 using APIformbuilder.Models;
 using Microsoft.AspNetCore.Cors;
 using Dapper;
+using Microsoft.Extensions.Configuration;
 
 namespace APIformbuilder.Controllers
 {
@@ -271,13 +272,109 @@ namespace APIformbuilder.Controllers
 				return StatusCode(StatusCodes.Status500InternalServerError, new { mensaje = error.Message });
 			}
 		}
-		//*****************************************************************************************************
+        //*****************************************************************************************************
+
+        //***************GUARDAR RESPUESTA***************************************
 
 
+        [HttpPost]
+        [Route("Respuestas")]
+
+        public async Task<IActionResult> GuardarRespuesta([FromBody] AnswerModel Answer)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(cadenaSQL))
+                {
+                    await connection.OpenAsync();
+
+                    string query = "INSERT INTO Answer (Id_ConfigForm, Id_Field, valor, fecha_creacion, fecha_modificacion) VALUES (@Id_ConfigForm, @Id_Field, @valor, @fecha_creacion, @fecha_modificacion)";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@Id_ConfigForm", Answer.Id_ConfigForm);
+                        command.Parameters.AddWithValue("@Id_Field", Answer.Id_Field);
+                        command.Parameters.AddWithValue("@valor", Answer.valor);
+                        command.Parameters.AddWithValue("@fecha_creacion", DateTime.Now);
+                        command.Parameters.AddWithValue("@fecha_modificacion", DateTime.Now);
+
+                        await command.ExecuteNonQueryAsync();
+                    }
+                }
+
+                return Ok("Respuesta del formulario guardada exitosamente.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error al guardar la respuesta: {ex.Message}");
+            }
+        }
+        //***************EDITAR RESPUESTA***************************************
+        [HttpPut]
+        [Route("Respuestas/Editar/{id}")]
+        public async Task<IActionResult> EditarRespuesta(int id, [FromBody] AnswerEdit Answer)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(cadenaSQL))
+                {
+                    await connection.OpenAsync();
+
+                    string query = "UPDATE Answer SET Id_ConfigForm = @Id_ConfigForm, Id_Field = @Id_Field, valor = @valor, fecha_modificacion = @fecha_modificacion WHERE Id_Answer = @Id";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@Id", id);
+                        command.Parameters.AddWithValue("@Id_ConfigForm", Answer.Id_ConfigForm);
+                        command.Parameters.AddWithValue("@Id_Field", Answer.Id_Field);
+                        command.Parameters.AddWithValue("@valor", Answer.valor);
+                        command.Parameters.AddWithValue("@fecha_modificacion", DateTime.Now);
+
+                        await command.ExecuteNonQueryAsync();
+                    }
+                }
+
+                return Ok("Respuesta del formulario editada exitosamente.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error al editar la respuesta: {ex.Message}");
+            }
+        }
+        //***************ELIMINAR RESPUESTA***************************************
+        [HttpPut]
+        [Route("Respuestas/Eliminar/{id_fila}")]
+        public async Task<IActionResult> EliminarRespuesta(int id_fila, AnswerErase Answer)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(cadenaSQL))
+                {
+                    await connection.OpenAsync();
+
+                    string query = "UPDATE Answer SET fecha_eliminacion = @fecha_eliminacion WHERE identificador_fila = @id_fila";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@id_fila", id_fila);
+                        command.Parameters.AddWithValue("@fecha_eliminacion", DateTime.Now);
+
+                        await command.ExecuteNonQueryAsync();
+                    }
+                }
+
+                return Ok("Respuesta del formulario eliminado exitosamente.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error al editar la respuesta: {ex.Message}");
+            }
+        }
 
 
-	}
+    }
 }
+
 
 
 
