@@ -251,7 +251,7 @@ namespace APIformbuilder.Controllers
 				{
 					conexion.Open();
 					var cmd = new SqlCommand("ListarRespuestas", conexion);
-					cmd.Parameters.AddWithValue("@Id_Formulario", IdConfigForm);
+					cmd.Parameters.AddWithValue("@FormularioID", IdConfigForm);
 					cmd.CommandType = CommandType.StoredProcedure;
 					using (var rd = cmd.ExecuteReader())
 					{
@@ -259,9 +259,13 @@ namespace APIformbuilder.Controllers
 						{
 							lista.Add(new RespuestasLista()
 							{
-								nombre = rd["nombre"].ToString(),
+                                Id_ConfigForm = Convert.ToInt32(rd["Id_ConfigForm"]),
+                                Id_Field = Convert.ToInt32(rd["Id_Field"]),
+                                Id_Answer = Convert.ToInt32(rd["Id_Answer"]),
+                                nombre = rd["nombre"].ToString(),
 								valor = rd["valor"].ToString(),
-							});
+                                identificador_fila = Convert.ToInt32(rd["identificador_fila"])
+                            });
 						}
 					}
 				}
