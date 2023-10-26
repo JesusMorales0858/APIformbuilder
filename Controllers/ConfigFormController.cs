@@ -7,13 +7,14 @@ using APIformbuilder.Models;
 using Microsoft.AspNetCore.Cors;
 using Dapper;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Win32;
 
 namespace APIformbuilder.Controllers
 {
     [EnableCors("ReglasCorse")]
     [Route("api/[controller]")]
     [ApiController]
+
+
     public class ConfigFormController : ControllerBase
     {
         private readonly string cadenaSQL;
@@ -162,7 +163,7 @@ namespace APIformbuilder.Controllers
                             campo.tipo = reader.GetString(reader.GetOrdinal("TipoCampo"));
                             campo.requerido = reader.GetInt32(reader.GetOrdinal("RequeridoCampo"));
                             campo.marcador = reader.GetString(reader.GetOrdinal("MarcadorCampo"));
-                            //campo.opciones = reader.GetString(reader.GetOrdinal("OpcionesCampo"));
+                            // campo.opciones = reader.GetString(reader.GetOrdinal("OpcionesCampo"));
                             campo.visible = reader.GetInt32(reader.GetOrdinal("VisibleCampo"));
                             campo.clase = reader.GetString(reader.GetOrdinal("ClaseCampo"));
                             campo.estado = reader.GetInt32(reader.GetOrdinal("EstadoCampo"));
@@ -240,43 +241,43 @@ namespace APIformbuilder.Controllers
                 }
             }
         }
-        //***************LISTAR RESPUESTAS**************
-        [HttpGet]
-        [Route("ListaRespuestas/{IdConfigForm:int}")]
-        public IActionResult ListaRespuesta(int IdConfigForm)
-        {
-            List<RespuestasLista> lista = new List<RespuestasLista>();
-            try
-            {
-                using (var conexion = new SqlConnection(cadenaSQL))
-                {
-                    conexion.Open();
-                    var cmd = new SqlCommand("ListarRespuestas", conexion);
-                    cmd.Parameters.AddWithValue("@FormularioID", IdConfigForm);
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    using (var rd = cmd.ExecuteReader())
-                    {
-                        while (rd.Read())
-                        {
-                            lista.Add(new RespuestasLista()
-                            {
+		//***************LISTAR RESPUESTAS**************
+		[HttpGet]
+		[Route("ListaRespuestas/{IdConfigForm:int}")]
+		public IActionResult ListaRespuesta(int IdConfigForm)
+		{
+			List<RespuestasLista> lista = new List<RespuestasLista>();
+			try
+			{
+				using (var conexion = new SqlConnection(cadenaSQL))
+				{
+					conexion.Open();
+					var cmd = new SqlCommand("ListarRespuestas", conexion);
+					cmd.Parameters.AddWithValue("@FormularioID", IdConfigForm);
+					cmd.CommandType = CommandType.StoredProcedure;
+					using (var rd = cmd.ExecuteReader())
+					{
+						while (rd.Read())
+						{
+							lista.Add(new RespuestasLista()
+							{
                                 Id_ConfigForm = Convert.ToInt32(rd["Id_ConfigForm"]),
                                 Id_Field = Convert.ToInt32(rd["Id_Field"]),
                                 Id_Answer = Convert.ToInt32(rd["Id_Answer"]),
                                 nombre = rd["nombre"].ToString(),
-                                valor = rd["valor"].ToString(),
+								valor = rd["valor"].ToString(),
                                 identificador_fila = Convert.ToInt32(rd["identificador_fila"])
                             });
-                        }
-                    }
-                }
-                return StatusCode(StatusCodes.Status200OK, new { lista });
-            }
-            catch (Exception error)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { mensaje = error.Message });
-            }
-        }
+						}
+					}
+				}
+				return StatusCode(StatusCodes.Status200OK, new { lista });
+			}
+			catch (Exception error)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, new { mensaje = error.Message });
+			}
+		}
         //*****************************************************************************************************
 
         //***************GUARDAR RESPUESTA***************************************
@@ -315,48 +316,37 @@ namespace APIformbuilder.Controllers
             }
         }
         //***************EDITAR RESPUESTA***************************************
-        [HttpPost]
-        [Route("Respuestas/Editar")]
-        public IActionResult ActualizarDatos([FromBody] List<AnswerModel> actualizaciones)
+        [HttpPut]
+        [Route("Respuestas/Editar/{id}")]
+        public async Task<IActionResult> EditarRespuesta(int id, [FromBody] AnswerEdit Answer)
         {
             try
             {
-                // Obtén la cadena de conexión a la base de datos desde la configuración
-                using (var conexion = new SqlConnection(cadenaSQL))
+                using (SqlConnection connection = new SqlConnection(cadenaSQL))
                 {
-                    conexion.Open();
+                    await connection.OpenAsync();
 
-                    // Crea una tabla de valores para los datos de actualización
-                    DataTable actualizacionesTable = new DataTable();
-                    actualizacionesTable.Columns.Add("Id_Answer", typeof(int));
-                    actualizacionesTable.Columns.Add("valor", typeof(string));
+                    string query = "UPDATE Answer SET Id_ConfigForm = @Id_ConfigForm, Id_Field = @Id_Field, valor = @valor, fecha_modificacion = @fecha_modificacion WHERE Id_Answer = @Id";
 
-                    foreach (var actualizacion in actualizaciones)
+                    using (SqlCommand command = new SqlCommand(query, connection))
                     {
-                        actualizacionesTable.Rows.Add(actualizacion.Id_Answer, actualizacion.valor);
-                    }
+                        command.Parameters.AddWithValue("@Id", id);
+                        command.Parameters.AddWithValue("@Id_ConfigForm", Answer.Id_ConfigForm);
+                        command.Parameters.AddWithValue("@Id_Field", Answer.Id_Field);
+                        command.Parameters.AddWithValue("@valor", Answer.valor);
+                        command.Parameters.AddWithValue("@fecha_modificacion", DateTime.Now);
 
-                    using (SqlCommand cmd = new SqlCommand("EditarRegistrosAnswer", conexion))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-
-                        // Asigna el parámetro del procedimiento almacenado
-                        SqlParameter parameter = cmd.Parameters.AddWithValue("@Actualizaciones", actualizacionesTable);
-                        parameter.SqlDbType = SqlDbType.Structured;
-
-                        cmd.ExecuteNonQuery();
+                        await command.ExecuteNonQueryAsync();
                     }
                 }
 
-                return Ok("Registros actualizados exitosamente");
+                return Ok("Respuesta del formulario editada exitosamente.");
             }
             catch (Exception ex)
             {
-                return BadRequest($"Error: {ex.Message}");
+                return BadRequest($"Error al editar la respuesta: {ex.Message}");
             }
         }
-        //*************************************************************
-
         //***************ELIMINAR RESPUESTA***************************************
         [HttpPut]
         [Route("Respuestas/Eliminar/{id_fila}")]
@@ -387,103 +377,78 @@ namespace APIformbuilder.Controllers
             }
         }
 
-        //****LISTAR RESPUESTAS X IDENTIFICADOR DE FILA
-        [HttpGet]
-        [Route("ListaRespuestasIdentificadorFila/{IdConfigForm:int}/{identificador_fila:int}")]
-
-        public IActionResult ListaRespuestaIdentificadorFila(int IdConfigForm, int identificador_fila)
+        [HttpPut]
+        [Route("EditarFormulario")]
+        public IActionResult EditarFormulario(int id, ConfigForm Field)
         {
-            List<RespuestasLista> lista = new List<RespuestasLista>();
-            try
+            using (var conexion = new SqlConnection(cadenaSQL))
             {
-                using (var conexion = new SqlConnection(cadenaSQL))
+                conexion.Open();
+                using (var transaction = conexion.BeginTransaction())
                 {
-                    conexion.Open();
-                    var cmd = new SqlCommand("ListarRespuestasPorIdentificadorFila", conexion);
-                    cmd.Parameters.AddWithValue("@FormularioID", IdConfigForm);
-                    cmd.Parameters.AddWithValue("@IdentificadorFila", identificador_fila);
-
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    using (var rd = cmd.ExecuteReader())
+                    try
                     {
-                        while (rd.Read())
+                        // Verifica si el formulario con el ID proporcionado existe
+                        var existingForm = conexion.QuerySingleOrDefault<ConfigForm>("SELECT * FROM ConfigForm WHERE Id_ConfigForm = @Id", new { Id = id }, transaction);
+
+                        if (existingForm == null)
                         {
-                            lista.Add(new RespuestasLista()
-                            {
-                                Id_ConfigForm = Convert.ToInt32(rd["Id_ConfigForm"]),
-                                Id_Field = Convert.ToInt32(rd["Id_Field"]),
-                                Id_Answer = Convert.ToInt32(rd["Id_Answer"]),
-                                nombre = rd["nombre"].ToString(),
-                                valor = rd["valor"].ToString(),
-                                identificador_fila = Convert.ToInt32(rd["identificador_fila"])
-                            });
+                            // El formulario no existe, devolver un error
+                            return NotFound("Formulario no encontrado");
                         }
+
+                        // Actualiza los datos del formulario
+                        DateTime fechaModificacion = DateTime.Now;
+                        var updateConfigFormSql = "UPDATE ConfigForm SET Titulo = @Titulo, Descripcion = @Descripcion, fecha_modificacion = @fecha_modificacion WHERE Id_ConfigForm = @Id";
+                        conexion.Execute(updateConfigFormSql, new
+                        {
+                            Id = id,
+                            Titulo = Field.Titulo,
+                            Descripcion = Field.Descripcion,
+                            fecha_modificacion = fechaModificacion
+                        }, transaction);
+
+                       
+
+                        // Inserta los nuevos campos
+                        foreach (var fieldInput in Field.Campos)
+                        {
+                            var insertFieldSql = "INSERT INTO Field (nombre, orden, etiqueta, tipo, requerido, marcador, opciones, visible, clase, estado, Id_ConfigForm, fecha_eliminacion) " +
+                                "VALUES (@nombre, @orden, @etiqueta, @tipo, @requerido, @marcador, @opciones, @visible, @clase, @estado, @Id_ConfigForm, @fecha_eliminacion);";
+                            conexion.Execute(insertFieldSql, new
+                            {
+                                nombre = fieldInput.nombre,
+                                orden = fieldInput.orden,
+                                etiqueta = fieldInput.etiqueta,
+                                tipo = fieldInput.tipo,
+                                requerido = fieldInput.requerido,
+                                marcador = fieldInput.marcador,
+                                opciones = fieldInput.opciones,
+                                visible = fieldInput.visible,
+                                clase = fieldInput.clase,
+                                estado = fieldInput.estado,
+                                Id_ConfigForm = id,
+                                fecha_eliminacion = fieldInput.fecha_eliminacion
+                            }, transaction);
+                        }
+
+                        transaction.Commit();
+
+                        // Devuelve el ID del formulario actualizado como respuesta HTTP 200 (éxito)
+                        return Ok(new { Id = id , Estado = "Cargado correctamente"});
+                    }
+                    catch (Exception)
+                    {
+                        transaction.Rollback();
+                        throw;
                     }
                 }
-                return StatusCode(StatusCodes.Status200OK, new { lista });
-            }
-            catch (Exception error)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { mensaje = error.Message });
             }
         }
-		//*****************************************************************************************************
-		//***************GUARDAR RESPUESTA***************************************
-		[HttpPost]
-		[Route("Respuestas/Guardar")]
-		public ActionResult<int> GuardarRespuesta([FromBody] List<NuevaRespuestasGuardar> registros)
-		{
-			try
-			{
-				using (var conexion = new SqlConnection(cadenaSQL))
-				{
-					conexion.Open();
 
-					// Obtener el próximo identificador_fila una vez
-					int proximoIdentificador = ObtenerProximoIdentificador(conexion);
 
-					foreach (var registro in registros)
-					{
-						// Construye la consulta SQL para insertar un registro en la tabla Answer
-						string query = "INSERT INTO Answer (Id_ConfigForm, Id_Field, valor, fecha_creacion, identificador_fila) " +
-									   "VALUES (@Id_ConfigForm, @Id_Field, @valor, GETDATE(), @IdentificadorFila);";
 
-						using (SqlCommand cmd = new SqlCommand(query, conexion))
-						{
-							cmd.Parameters.AddWithValue("@Id_ConfigForm", registro.Id_ConfigForm);
-							cmd.Parameters.AddWithValue("@Id_Field", registro.Id_Field);
-							cmd.Parameters.AddWithValue("@valor", registro.valor);
-
-							// Utiliza el mismo valor de identificador_fila para todos los registros
-							cmd.Parameters.AddWithValue("@IdentificadorFila", proximoIdentificador);
-
-							cmd.ExecuteNonQuery();
-						}
-					}
-
-					return Ok(registros.Count);
-				}
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(ex.Message);
-			}
-		}
-
-		private int ObtenerProximoIdentificador(SqlConnection conexion)
-		{
-			// Obtener el próximo identificador_fila
-			string query = "SELECT ISNULL(MAX(identificador_fila), 0) + 1 FROM Answer;";
-
-			using (SqlCommand cmd = new SqlCommand(query, conexion))
-			{
-				object resultado = cmd.ExecuteScalar();
-				return resultado is DBNull ? 1 : (int)resultado;
-			}
-		}
-
-		//******************************************************************
-	}
+    }
 }
 
 

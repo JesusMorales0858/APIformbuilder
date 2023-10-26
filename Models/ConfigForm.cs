@@ -14,10 +14,10 @@ namespace APIformbuilder.Models
         public string Descripcion { get; set; }
 
         [Display(Name = "Fecha de Creación")]
-        public DateTime Fecha_Creacion { get; set; }
+        public DateTime? Fecha_Creacion { get; set; }
 
         [Display(Name = "Fecha de Modificación")]
-        public DateTime Fecha_Modificacion { get; set; }
+        public DateTime? Fecha_Modificacion { get; set; }                       
 
         [Display(Name = "Fecha de Eliminación")]
         public DateTime? Fecha_Eliminacion { get; set; }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+
 namespace APIformbuilder
 {
     public class Startup
@@ -11,7 +12,7 @@ namespace APIformbuilder
             {
                 options.AddDefaultPolicy(builder =>
                 {
-                    builder.WithOrigins("http://localhost:8081")
+                    builder.WithOrigins("http://apiexcelencia.somee.com/")
                            .AllowAnyHeader()
                            .AllowAnyMethod();
                 });
@@ -22,6 +23,7 @@ namespace APIformbuilder
         public void Configure(IApplicationBuilder app)
         {
             app.UseCors();
+       
         }
     }
 }
