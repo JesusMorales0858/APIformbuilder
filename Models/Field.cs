@@ -12,7 +12,7 @@ namespace APIformbuilder.Models
         public string tipo { get; set;}
         public int? requerido { get; set; }
         public string? marcador { get; set; }
-        public string opciones { get; set; }
+        public string? opciones { get; set; }
         public int? visible { get; set; }
         public string clase { get; set; }
         public int? estado { get; set; }
