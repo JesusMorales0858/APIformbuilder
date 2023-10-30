@@ -7,11 +7,14 @@ using APIformbuilder.Models;
 using Microsoft.AspNetCore.Cors;
 using Dapper;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Win32;
+using Microsoft.AspNetCore.Authorization;
 
 namespace APIformbuilder.Controllers
 {
     [EnableCors("ReglasCorse")]
     [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
 
 
@@ -163,7 +166,7 @@ namespace APIformbuilder.Controllers
                             campo.tipo = reader.GetString(reader.GetOrdinal("TipoCampo"));
                             campo.requerido = reader.GetInt32(reader.GetOrdinal("RequeridoCampo"));
                             campo.marcador = reader.GetString(reader.GetOrdinal("MarcadorCampo"));
-                            // campo.opciones = reader.GetString(reader.GetOrdinal("OpcionesCampo"));
+                            campo.opciones = reader.GetString(reader.GetOrdinal("OpcionesCampo"));
                             campo.visible = reader.GetInt32(reader.GetOrdinal("VisibleCampo"));
                             campo.clase = reader.GetString(reader.GetOrdinal("ClaseCampo"));
                             campo.estado = reader.GetInt32(reader.GetOrdinal("EstadoCampo"));
