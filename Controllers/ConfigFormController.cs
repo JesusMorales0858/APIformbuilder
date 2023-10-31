@@ -360,8 +360,64 @@ namespace APIformbuilder.Controllers
 			}
 		}
 		//*************************************************************
-		//****LISTAR RESPUESTAS X IDENTIFICADOR DE FILA
-		[HttpGet]
+		//***************GUARDAR RESPUESTA***************************************
+		[HttpPost]
+		[Route("Respuestas/Guardar")]
+		public ActionResult<int> GuardarRespuesta([FromBody] List<NuevaRespuestasGuardar> registros)
+		{
+			try
+			{
+				using (var conexion = new SqlConnection(cadenaSQL))
+				{
+					conexion.Open();
+
+					// Obtener el próximo identificador_fila una vez
+					int proximoIdentificador = ObtenerProximoIdentificador(conexion);
+
+					foreach (var registro in registros)
+					{
+						// Construye la consulta SQL para insertar un registro en la tabla Answer
+						string query = "INSERT INTO Answer (Id_ConfigForm, Id_Field, valor, fecha_creacion, identificador_fila) " +
+									   "VALUES (@Id_ConfigForm, @Id_Field, @valor, GETDATE(), @IdentificadorFila);";
+
+						using (SqlCommand cmd = new SqlCommand(query, conexion))
+						{
+							cmd.Parameters.AddWithValue("@Id_ConfigForm", registro.Id_ConfigForm);
+							cmd.Parameters.AddWithValue("@Id_Field", registro.Id_Field);
+							cmd.Parameters.AddWithValue("@valor", registro.valor);
+
+							// Utiliza el mismo valor de identificador_fila para todos los registros
+							cmd.Parameters.AddWithValue("@IdentificadorFila", proximoIdentificador);
+
+							cmd.ExecuteNonQuery();
+						}
+					}
+
+					return Ok(registros.Count);
+				}
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(ex.Message);
+			}
+		}
+
+		private int ObtenerProximoIdentificador(SqlConnection conexion)
+		{
+			// Obtener el próximo identificador_fila
+			string query = "SELECT ISNULL(MAX(identificador_fila), 0) + 1 FROM Answer;";
+
+			using (SqlCommand cmd = new SqlCommand(query, conexion))
+			{
+				object resultado = cmd.ExecuteScalar();
+				return resultado is DBNull ? 1 : (int)resultado;
+			}
+		}
+
+	
+	//******************************************************************
+	//****LISTAR RESPUESTAS X IDENTIFICADOR DE FILA
+	[HttpGet]
 		[Route("ListaRespuestasIdentificadorFila/{IdConfigForm:int}/{identificador_fila:int}")]
 
 		public IActionResult ListaRespuestaIdentificadorFila(int IdConfigForm, int identificador_fila)
