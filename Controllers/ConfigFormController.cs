@@ -318,40 +318,90 @@ namespace APIformbuilder.Controllers
                 return BadRequest($"Error al guardar la respuesta: {ex.Message}");
             }
         }
-        //***************EDITAR RESPUESTA***************************************
-        [HttpPut]
-        [Route("Respuestas/Editar/{id}")]
-        public async Task<IActionResult> EditarRespuesta(int id, [FromBody] AnswerEdit Answer)
-        {
-            try
-            {
-                using (SqlConnection connection = new SqlConnection(cadenaSQL))
-                {
-                    await connection.OpenAsync();
+		//***************EDITAR RESPUESTA***************************************
+		[HttpPost]
+		[Route("Respuestas/Editar")]
+		public IActionResult ActualizarDatos([FromBody] List<AnswerModel> actualizaciones)
+		{
+			try
+			{
+				// Obtén la cadena de conexión a la base de datos desde la configuración
+				using (var conexion = new SqlConnection(cadenaSQL))
+				{
+					conexion.Open();
 
-                    string query = "UPDATE Answer SET Id_ConfigForm = @Id_ConfigForm, Id_Field = @Id_Field, valor = @valor, fecha_modificacion = @fecha_modificacion WHERE Id_Answer = @Id";
+					// Crea una tabla de valores para los datos de actualización
+					DataTable actualizacionesTable = new DataTable();
+					actualizacionesTable.Columns.Add("Id_Answer", typeof(int));
+					actualizacionesTable.Columns.Add("valor", typeof(string));
 
-                    using (SqlCommand command = new SqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@Id", id);
-                        command.Parameters.AddWithValue("@Id_ConfigForm", Answer.Id_ConfigForm);
-                        command.Parameters.AddWithValue("@Id_Field", Answer.Id_Field);
-                        command.Parameters.AddWithValue("@valor", Answer.valor);
-                        command.Parameters.AddWithValue("@fecha_modificacion", DateTime.Now);
+					foreach (var actualizacion in actualizaciones)
+					{
+						actualizacionesTable.Rows.Add(actualizacion.Id_Answer, actualizacion.valor);
+					}
 
-                        await command.ExecuteNonQueryAsync();
-                    }
-                }
+					using (SqlCommand cmd = new SqlCommand("EditarRegistrosAnswer", conexion))
+					{
+						cmd.CommandType = CommandType.StoredProcedure;
 
-                return Ok("Respuesta del formulario editada exitosamente.");
-            }
-            catch (Exception ex)
-            {
-                return BadRequest($"Error al editar la respuesta: {ex.Message}");
-            }
-        }
-        //***************ELIMINAR RESPUESTA***************************************
-        [HttpPut]
+						// Asigna el parámetro del procedimiento almacenado
+						SqlParameter parameter = cmd.Parameters.AddWithValue("@Actualizaciones", actualizacionesTable);
+						parameter.SqlDbType = SqlDbType.Structured;
+
+						cmd.ExecuteNonQuery();
+					}
+				}
+
+				return Ok("Registros actualizados exitosamente");
+			}
+			catch (Exception ex)
+			{
+				return BadRequest($"Error: {ex.Message}");
+			}
+		}
+		//*************************************************************
+		//****LISTAR RESPUESTAS X IDENTIFICADOR DE FILA
+		[HttpGet]
+		[Route("ListaRespuestasIdentificadorFila/{IdConfigForm:int}/{identificador_fila:int}")]
+
+		public IActionResult ListaRespuestaIdentificadorFila(int IdConfigForm, int identificador_fila)
+		{
+			List<RespuestasLista> lista = new List<RespuestasLista>();
+			try
+			{
+				using (var conexion = new SqlConnection(cadenaSQL))
+				{
+					conexion.Open();
+					var cmd = new SqlCommand("ListarRespuestasPorIdentificadorFila", conexion);
+					cmd.Parameters.AddWithValue("@FormularioID", IdConfigForm);
+					cmd.Parameters.AddWithValue("@IdentificadorFila", identificador_fila);
+
+					cmd.CommandType = CommandType.StoredProcedure;
+					using (var rd = cmd.ExecuteReader())
+					{
+						while (rd.Read())
+						{
+							lista.Add(new RespuestasLista()
+							{
+								Id_ConfigForm = Convert.ToInt32(rd["Id_ConfigForm"]),
+								Id_Field = Convert.ToInt32(rd["Id_Field"]),
+								Id_Answer = Convert.ToInt32(rd["Id_Answer"]),
+								nombre = rd["nombre"].ToString(),
+								valor = rd["valor"].ToString(),
+								identificador_fila = Convert.ToInt32(rd["identificador_fila"])
+							});
+						}
+					}
+				}
+				return StatusCode(StatusCodes.Status200OK, new { lista });
+			}
+			catch (Exception error)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, new { mensaje = error.Message });
+			}
+		}
+		//***************ELIMINAR RESPUESTA***************************************
+		[HttpPut]
         [Route("Respuestas/Eliminar/{id_fila}")]
         public async Task<IActionResult> EliminarRespuesta(int id_fila, AnswerErase Answer)
         {
