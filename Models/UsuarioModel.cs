@@ -13,5 +13,11 @@
         public int RolID { get; set; }
         public string RolName { get; set; }
     }
+    public class UsuarioListaModel
+    {
+        public int UserID { get; set; }
+        public string Username { get; set; }
+    }
+
 
 }
