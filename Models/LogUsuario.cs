@@ -9,6 +9,9 @@ namespace APIformbuilder.Models
 
         [Required(ErrorMessage = "El campo 'Password' es obligatorio.")]
         public string Password { get; set; }
+
+        public int UserID { get; set; }
+        public int permisoId { get; set; }
     }
 }
 

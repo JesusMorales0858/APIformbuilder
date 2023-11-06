@@ -22,11 +22,12 @@ namespace APIformbuilder.Controllers
 			cadenaSQL = config.GetConnectionString("CadenaSQL");
 		}
 
-        [HttpPost]
-        [Route("validar")]
-        public ActionResult validar ([FromBody] LogUsuario request) {
-
-			bool usuarioValido = ValidarUsuario(request.Username, request.Password);
+		[HttpPost]
+		[Route("validar")]
+		public ActionResult validar([FromBody] LogUsuario request)
+		{
+			int id_user; // Declarar la variable id_user
+			bool usuarioValido = ValidarUsuario(request.Username, request.Password, out id_user); // Pasar id_user como parámetro
 
 			if (usuarioValido)
 			{
@@ -42,23 +43,32 @@ namespace APIformbuilder.Controllers
 				var tokenHandler = new JwtSecurityTokenHandler();
 				var tokenConfig = tokenHandler.CreateToken(tokenDescriptor);
 				string tokenCreado = tokenHandler.WriteToken(tokenConfig);
+
+				List<int> idPermisos = ObtenerIdPermisos(id_user);
+
 				var NombreUsuario = request.Username;
-				return StatusCode(StatusCodes.Status200OK, new { 
+				return StatusCode(StatusCodes.Status200OK, new
+				{
 					token = tokenCreado,
-				    usuario = NombreUsuario});
+					usuario = NombreUsuario,
+					id_usuario = id_user,
+					permisos = idPermisos
+				});
 			}
 			else
 			{
 				return StatusCode(StatusCodes.Status401Unauthorized, new { mensaje = "El usuario es incorrecto o no existe" });
 			}
 		}
-		private bool ValidarUsuario(string username, string password)
+
+		private bool ValidarUsuario(string username, string password, out int id_user) // Agregar el parámetro out para obtener id_user
 		{
 			using (var conexion = new SqlConnection(cadenaSQL))
 			{
 				conexion.Open();
 
-				string query = "SELECT Username, Password FROM Users WHERE Username = @Username";
+				// Modifica la consulta SQL para obtener el id_user
+				string query = "SELECT Username, Password, UserID FROM Users WHERE Username = @Username";
 				using (var command = new SqlCommand(query, conexion))
 				{
 					command.Parameters.AddWithValue("@Username", username);
@@ -67,6 +77,7 @@ namespace APIformbuilder.Controllers
 						if (reader.Read())
 						{
 							string storedPasswordHash = reader["Password"].ToString(); // Suponemos que la contraseña se almacena como hash
+							id_user = Convert.ToInt32(reader["UserID"]); // Obtiene el id usuario
 
 							// Aquí debes verificar si la contraseña proporcionada coincide con el hash almacenado
 							// Utiliza la función VerifyPassword que mencioné anteriormente para comparar la contraseña proporcionada con el hash almacenado
@@ -78,12 +89,63 @@ namespace APIformbuilder.Controllers
 					}
 				}
 			}
-
+			id_user = -1; // Establece id_user en un valor predeterminado si la autenticación falla
 			return false; // El usuario no existe o la contraseña no coincide
 		}
+
 		private bool VerifyPassword(string password, string hash)
 		{
 			return BCrypt.Net.BCrypt.Verify(password, hash);
+		}
+
+
+		private int ObtenerIdUsuario(string username)
+		{
+			using (var conexion = new SqlConnection(cadenaSQL))
+			{
+				conexion.Open();
+
+				string query = "SELECT UserID FROM Users WHERE Username = @Username";
+				using (var command = new SqlCommand(query, conexion))
+				{
+					command.Parameters.AddWithValue("@Username", username);
+					using (var reader = command.ExecuteReader())
+					{
+						if (reader.Read())
+						{
+							return Convert.ToInt32(reader["UserID"]);
+						}
+					}
+				}
+			}
+
+			// Devuelve un valor predeterminado o maneja el caso en el que el usuario no existe
+			return -1;
+		}
+
+		private List<int> ObtenerIdPermisos(int id_user)
+		{
+			List<int> idPermisos = new List<int>();
+
+			using (var conexion = new SqlConnection(cadenaSQL))
+			{
+				conexion.Open();
+
+				string query = "SELECT permisoId FROM permisos WHERE usuarioId = @IdUser";
+				using (var command = new SqlCommand(query, conexion))
+				{
+					command.Parameters.AddWithValue("@IdUser", id_user);
+					using (var reader = command.ExecuteReader())
+					{
+						while (reader.Read())
+						{
+							idPermisos.Add(Convert.ToInt32(reader["permisoId"]));
+						}
+					}
+				}
+			}
+
+			return idPermisos;
 		}
 
 	}
