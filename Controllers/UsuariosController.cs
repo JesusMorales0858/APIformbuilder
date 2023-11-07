@@ -18,6 +18,7 @@ namespace APIformbuilder.Controllers
         {
             cadenaSQL = config.GetConnectionString("CadenaSQL");
         }
+
         //***************LISTAR Usuarios**************
         [HttpGet]
         [Route("ListaUsuarios")]
@@ -91,7 +92,7 @@ namespace APIformbuilder.Controllers
             return hash;
         }
 
-        /*****EDITAR USERNAME USUARIOS***********/
+        /********EDITAR USERNAME USUARIOS***********/
 
         [HttpPut]
         [Route("EditarNombre/{UserID:int}")]
