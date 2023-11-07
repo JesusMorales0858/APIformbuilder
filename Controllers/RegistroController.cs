@@ -78,7 +78,7 @@ namespace APIformbuilder.Controllers
 			// Genera un nuevo hash con una sal aleatoria
 			string hash = BCrypt.Net.BCrypt.HashPassword(password, BCrypt.Net.BCrypt.GenerateSalt());
 			return hash;
-		}
+		}   
 
 		
 	}
