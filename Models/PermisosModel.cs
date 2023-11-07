@@ -17,7 +17,21 @@
         public string Username { get; set;}
         public string roleId { get; set; }
         public DateTime? usuarioEliminado { get;set;}
-
-
     }
+    public class ResultadoPermisos
+    {
+        public int PermisosID { get; set; }
+        public int UsuarioId { get; set; }
+        public int FuncionId { get; set; }
+        public string Descripcion { get; set; }
+        public string Username { get; set; }
+        public string RoleID { get; set; }
+        public DateTime? UsuarioEliminado { get; set; }
+    }
+    public class AsignacionPermiso
+    {
+        public int UsuarioId { get; set; }
+        public int PermisoId { get; set; }
+    }   
 }
+    

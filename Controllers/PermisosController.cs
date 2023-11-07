@@ -54,5 +54,103 @@ namespace APIformbuilder.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new { mensaje = error.Message });
             }
         }
+        /*Buscar permisos por usuario*/
+        [HttpGet]
+        public ActionResult<IEnumerable<ResultadoPermisos>> ObtenerPermisosPorUsuario(int userID)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(cadenaSQL))
+                {
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand("ListadoPermisosXUser", connection))
+                    {
+                        command.CommandType = System.Data.CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@UserID", userID);
+
+                        var resultados = new List<ResultadoPermisos>();
+
+                        using (var reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                resultados.Add(new ResultadoPermisos
+                                {
+                                    PermisosID = (int)reader["permisosID"],
+                                    UsuarioId = (int)reader["usuarioId"],
+                                    FuncionId = (int)reader["permisoId"],
+                                    Descripcion = reader["descripcion"].ToString(),
+                                    Username = reader["Username"].ToString(),
+                                    RoleID = reader["RoleID"].ToString(),
+                                    UsuarioEliminado = reader["usuario_eliminado"] as DateTime?
+                                });
+                            }
+                        }
+
+                        return Ok(resultados);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error al obtener permisos por usuario: {ex.Message}");
+            }
+        }
+        /*Asignar permiso*/
+        [HttpPost]
+        public IActionResult AsignarPermiso([FromBody] AsignacionPermiso asignacion)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(cadenaSQL))
+                {
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand("AsignarPermisoAUsuario", connection))
+                    {
+                        command.CommandType = System.Data.CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@UsuarioId", asignacion.UsuarioId);
+                        command.Parameters.AddWithValue("@PermisoId", asignacion.PermisoId);
+
+                        command.ExecuteNonQuery();
+                    }
+                }
+
+                return Ok("Permiso asignado exitosamente.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error al asignar el permiso: {ex.Message}");
+            }
+        }
+        /*Eliminar permisos*/
+        [HttpDelete]
+        public IActionResult EliminarPermiso(int usuarioId, int permisoId)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(cadenaSQL))
+                {
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand("EliminarPermisoDeUsuario", connection))
+                    {
+                        command.CommandType = System.Data.CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@UsuarioId", usuarioId);
+                        command.Parameters.AddWithValue("@PermisoId", permisoId);
+
+                        command.ExecuteNonQuery();
+                    }
+                }
+
+                return Ok("Permiso eliminado exitosamente.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error al eliminar el permiso: {ex.Message}");
+            }
+        }
+
     }
 }
