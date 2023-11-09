@@ -40,8 +40,9 @@ namespace APIformbuilder.Controllers
                             {
                                 UserID = Convert.ToInt32(rd["UserID"]),
                                 Username = rd["Username"].ToString(),
-                                Password = rd["Password"].ToString(),
-                                RoleID = rd["RoleID"].ToString()
+                                RoleID = rd["RoleID"].ToString(),
+                                RolName = rd["RolName"].ToString(),
+                                fecha_eliminacion = rd["fecha_eliminacion"] as DateTime?
                             });
                         }
                     }
