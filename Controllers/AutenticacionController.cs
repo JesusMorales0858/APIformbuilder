@@ -10,15 +10,15 @@ using System.Data;
 using System.Data.SqlClient;
 namespace APIformbuilder.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class AutenticacionController : ControllerBase
-    {
+	[Route("api/[controller]")]
+	[ApiController]
+	public class AutenticacionController : ControllerBase
+	{
 		private readonly string cadenaSQL;
 		private readonly string secretKey;
-        public AutenticacionController(IConfiguration config)
-        {
-             secretKey = config.GetSection("settings").GetSection("secretkey").ToString();
+		public AutenticacionController(IConfiguration config)
+		{
+			secretKey = config.GetSection("settings").GetSection("secretkey").ToString();
 			cadenaSQL = config.GetConnectionString("CadenaSQL");
 		}
 
@@ -27,7 +27,7 @@ namespace APIformbuilder.Controllers
 		public ActionResult validar([FromBody] LogUsuario request)
 		{
 			int id_user; // Declarar la variable id_user
-			bool usuarioValido = ValidarUsuario(request.Username, request.Password, out id_user); // Pasar id_user como parámetro
+			bool usuarioValido = ValidarUsuario(request.Username, request.Password, out id_user, out int roleId); // Pasar id_user como parámetro
 
 			if (usuarioValido)
 			{
@@ -52,7 +52,8 @@ namespace APIformbuilder.Controllers
 					token = tokenCreado,
 					usuario = NombreUsuario,
 					id_usuario = id_user,
-					permisos = idPermisos
+					permisos = idPermisos,
+					rol = roleId
 				});
 			}
 			else
@@ -61,14 +62,14 @@ namespace APIformbuilder.Controllers
 			}
 		}
 
-		private bool ValidarUsuario(string username, string password, out int id_user) // Agregar el parámetro out para obtener id_user
+		private bool ValidarUsuario(string username, string password, out int id_user, out int roleId) // Agregar el parámetro out para obtener id_user
 		{
 			using (var conexion = new SqlConnection(cadenaSQL))
 			{
 				conexion.Open();
 
 				// Modifica la consulta SQL para obtener el id_user
-				string query = "SELECT Username, Password, UserID FROM Users WHERE Username = @Username";
+				string query = "SELECT Username, Password, UserID, RoleID FROM Users WHERE Username = @Username AND fecha_eliminacion IS NULL";
 				using (var command = new SqlCommand(query, conexion))
 				{
 					command.Parameters.AddWithValue("@Username", username);
@@ -78,6 +79,7 @@ namespace APIformbuilder.Controllers
 						{
 							string storedPasswordHash = reader["Password"].ToString(); // Suponemos que la contraseña se almacena como hash
 							id_user = Convert.ToInt32(reader["UserID"]); // Obtiene el id usuario
+							roleId = Convert.ToInt32(reader["RoleID"]);
 
 							// Aquí debes verificar si la contraseña proporcionada coincide con el hash almacenado
 							// Utiliza la función VerifyPassword que mencioné anteriormente para comparar la contraseña proporcionada con el hash almacenado
@@ -90,6 +92,7 @@ namespace APIformbuilder.Controllers
 				}
 			}
 			id_user = -1; // Establece id_user en un valor predeterminado si la autenticación falla
+			roleId = -1;
 			return false; // El usuario no existe o la contraseña no coincide
 		}
 
@@ -99,13 +102,13 @@ namespace APIformbuilder.Controllers
 		}
 
 
-		private int ObtenerIdUsuario(string username)
+		private (int, int) ObtenerIdUsuario(string username)
 		{
 			using (var conexion = new SqlConnection(cadenaSQL))
 			{
 				conexion.Open();
 
-				string query = "SELECT UserID FROM Users WHERE Username = @Username";
+				string query = "SELECT UserID, RoleID FROM Users WHERE Username = @Username AND fecha_eliminacion IS NULL";
 				using (var command = new SqlCommand(query, conexion))
 				{
 					command.Parameters.AddWithValue("@Username", username);
@@ -113,15 +116,16 @@ namespace APIformbuilder.Controllers
 					{
 						if (reader.Read())
 						{
-							return Convert.ToInt32(reader["UserID"]);
+							return (Convert.ToInt32(reader["UserID"]), Convert.ToInt32(reader["RoleID"]));
 						}
 					}
 				}
 			}
 
 			// Devuelve un valor predeterminado o maneja el caso en el que el usuario no existe
-			return -1;
+			return (-1, -1);
 		}
+
 
 		private List<int> ObtenerIdPermisos(int id_user)
 		{
@@ -147,6 +151,8 @@ namespace APIformbuilder.Controllers
 
 			return idPermisos;
 		}
+
+		//********************
 
 	}
 }
